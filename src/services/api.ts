@@ -1,10 +1,19 @@
 import { AuthSession, ParsedStatementTransaction, Transaction } from '../types/expense';
 import { Platform } from 'react-native';
 
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+const LOCAL_API_URL = 'http://localhost:4000/api';
+const PRODUCTION_API_URL = 'https://spend-sights.vercel.app/api';
+
+function normalizeApiUrl(url: string) {
+  return url.replace(/\/+$/, '');
+}
+
+const configuredApiUrl = normalizeApiUrl(process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? LOCAL_API_URL : PRODUCTION_API_URL));
 const API_URL =
-  Platform.OS === 'android'
-    ? configuredApiUrl.replace('http://localhost:', 'http://10.0.2.2:').replace('http://127.0.0.1:', 'http://10.0.2.2:')
+  __DEV__ && Platform.OS === 'android'
+    ? configuredApiUrl
+        .replace('http://localhost:', 'http://10.0.2.2:')
+        .replace('http://127.0.0.1:', 'http://10.0.2.2:')
     : configuredApiUrl;
 const DEBUG_API = process.env.EXPO_PUBLIC_DEBUG_API === 'true' || __DEV__;
 

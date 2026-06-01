@@ -1,9 +1,5 @@
-import app from '../../server/dist/app.js';
+import { transactionsHandler } from '../../serverless/dataApi';
 
 export default async function handler(req: any, res: any) {
-  if (req.url && !req.url.startsWith('/api')) {
-    req.url = `/api/transactions${req.url.startsWith('/') ? '' : '/'}${req.url}`;
-  }
-
-  return app(req, res);
+  return transactionsHandler(req, res);
 }

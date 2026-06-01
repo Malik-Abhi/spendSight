@@ -1,9 +1,5 @@
-import app from '../../server/dist/app.js';
+import authHandler from '../../serverless/authApi';
 
 export default async function handler(req: any, res: any) {
-  if (req.url && !req.url.startsWith('/api')) {
-    req.url = `/api/auth${req.url.startsWith('/') ? '' : '/'}${req.url}`;
-  }
-
-  return app(req, res);
+  return authHandler(req, res);
 }
