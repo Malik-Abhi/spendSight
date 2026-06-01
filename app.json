@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "SpendSight",
+    "slug": "spendsight",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "spendsight",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#101820"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.aryanmalik.spendsight",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.aryanmalik.spendsight",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#101820"
+      }
+    }
+  }
+}
