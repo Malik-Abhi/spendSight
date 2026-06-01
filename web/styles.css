@@ -875,7 +875,7 @@ h1 {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    padding: 34px 20px 128px;
+    padding: 34px 20px calc(176px + env(safe-area-inset-bottom));
     max-height: 100dvh;
   }
 
