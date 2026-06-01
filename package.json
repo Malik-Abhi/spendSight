@@ -12,7 +12,7 @@
     "ios": "expo start --ios --port 8081",
     "expo:web": "expo start --web --port 8081",
     "web": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && tsc -p server/tsconfig.json",
     "web:build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",

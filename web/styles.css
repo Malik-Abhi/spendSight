@@ -484,10 +484,11 @@ h1 {
   transform: translateY(-8px);
 }
 
-.auth-layout {
+.app-shell.auth-layout {
   grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 460px);
   gap: clamp(28px, 5vw, 64px);
   align-items: center;
+  justify-content: center;
 }
 
 .auth-hero {
@@ -839,18 +840,29 @@ h1 {
     bottom: 16px;
   }
 
-  .auth-layout {
+  .app-shell.auth-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: flex-start;
-    gap: 18px;
+    width: 100%;
+    overflow-x: hidden;
+    gap: 20px;
+  }
+
+  .auth-layout {
+    display: flex;
+    flex-direction: column;
   }
 
   .auth-hero {
-    max-width: 520px;
+    width: min(100%, 380px);
+    max-width: 380px;
     margin: 0 auto;
   }
 
   .spendsight-logo {
-    width: min(300px, 76vw);
+    width: min(280px, 72vw);
     margin-bottom: 12px;
   }
 
@@ -860,16 +872,17 @@ h1 {
   }
 
   .auth-hero p:last-child {
-    max-width: 440px;
+    max-width: 340px;
     margin-top: 10px;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.45;
   }
 
   .auth-card {
-    width: min(100%, 520px);
+    width: min(100%, 380px);
+    max-width: 380px;
     margin: 6px auto 0;
-    padding: 22px;
+    padding: 20px;
     border-radius: 16px;
   }
 

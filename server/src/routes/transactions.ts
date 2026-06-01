@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, AuthedRequest } from '../middleware/auth.js';
 import { TransactionModel } from '../models/Transaction.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const transactionRouter = Router();
 
@@ -21,17 +22,17 @@ function serializeTransaction(transaction: any) {
   };
 }
 
-transactionRouter.get('/', async (req: AuthedRequest, res) => {
+transactionRouter.get('/', asyncHandler(async (req: AuthedRequest, res) => {
   const transactions = await TransactionModel.find({ userId: req.userId }).sort({ date: -1, createdAt: -1 });
   res.json({ transactions: transactions.map(serializeTransaction) });
-});
+}));
 
-transactionRouter.delete('/', async (req: AuthedRequest, res) => {
+transactionRouter.delete('/', asyncHandler(async (req: AuthedRequest, res) => {
   const result = await TransactionModel.deleteMany({ userId: req.userId });
   res.json({ deletedCount: result.deletedCount ?? 0 });
-});
+}));
 
-transactionRouter.post('/', async (req: AuthedRequest, res) => {
+transactionRouter.post('/', asyncHandler(async (req: AuthedRequest, res) => {
   const person = typeof req.body.person === 'string' ? req.body.person.trim() : '';
   const transaction = await TransactionModel.create({
     ...req.body,
@@ -41,9 +42,9 @@ transactionRouter.post('/', async (req: AuthedRequest, res) => {
     source: 'manual'
   });
   res.status(201).json({ transaction: serializeTransaction(transaction) });
-});
+}));
 
-transactionRouter.post('/import', async (req: AuthedRequest, res) => {
+transactionRouter.post('/import', asyncHandler(async (req: AuthedRequest, res) => {
   const { transactions } = req.body as {
     transactions?: Array<{
       title?: string;
@@ -79,9 +80,9 @@ transactionRouter.post('/import', async (req: AuthedRequest, res) => {
   );
 
   res.status(201).json({ transactions: created.map(serializeTransaction) });
-});
+}));
 
-transactionRouter.put('/:id', async (req: AuthedRequest, res) => {
+transactionRouter.put('/:id', asyncHandler(async (req: AuthedRequest, res) => {
   const { title, amount, category, date, note, person, kind } = req.body as {
     title?: string;
     amount?: number;
@@ -117,9 +118,9 @@ transactionRouter.put('/:id', async (req: AuthedRequest, res) => {
   }
 
   res.json({ transaction: serializeTransaction(transaction) });
-});
+}));
 
-transactionRouter.delete('/:id', async (req: AuthedRequest, res) => {
+transactionRouter.delete('/:id', asyncHandler(async (req: AuthedRequest, res) => {
   const result = await TransactionModel.findOneAndDelete({ _id: req.params.id, userId: req.userId });
   if (!result) {
     res.status(404).json({ message: 'Transaction not found' });
@@ -127,4 +128,4 @@ transactionRouter.delete('/:id', async (req: AuthedRequest, res) => {
   }
 
   res.json({ transaction: serializeTransaction(result) });
-});
+}));

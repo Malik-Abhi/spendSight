@@ -1,11 +1,13 @@
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/env.js';
 import { UserModel } from '../models/User.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const authRouter = Router();
 
-authRouter.post('/signup', async (req, res) => {
+authRouter.post('/signup', asyncHandler(async (req, res) => {
   const { name, email, password } = req.body as { name?: string; email?: string; password?: string };
   if (!name || !email || !password) {
     res.status(400).json({ message: 'Name, email, and password are required' });
@@ -21,15 +23,15 @@ authRouter.post('/signup', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await UserModel.create({ name: name.trim(), email: normalizedEmail, passwordHash, authProvider: 'password' });
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET ?? '', { expiresIn: '30d' });
+  const token = jwt.sign({ userId: user._id }, getJwtSecret(), { expiresIn: '30d' });
 
   res.status(201).json({
     token,
     user: { id: user._id, name: user.name, email: user.email }
   });
-});
+}));
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body as { email?: string; password?: string };
   if (!email || !password) {
     res.status(400).json({ message: 'Email and password are required' });
@@ -53,12 +55,12 @@ authRouter.post('/login', async (req, res) => {
     return;
   }
 
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET ?? '', { expiresIn: '30d' });
+  const token = jwt.sign({ userId: user._id }, getJwtSecret(), { expiresIn: '30d' });
   res.json({
     token,
     user: { id: user._id, name: user.name, email: user.email }
   });
-});
+}));
 
 type GoogleTokenInfo = {
   aud?: string;
@@ -78,7 +80,7 @@ type GoogleUserInfo = {
 
 const isVerifiedEmail = (value: string | boolean | undefined) => value === true || value === 'true';
 
-authRouter.post('/google', async (req, res) => {
+authRouter.post('/google', asyncHandler(async (req, res) => {
   const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!googleClientId) {
     res.status(500).json({ message: 'Google login is not configured' });
@@ -144,9 +146,9 @@ authRouter.post('/google', async (req, res) => {
     await user.save();
   }
 
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET ?? '', { expiresIn: '30d' });
+  const token = jwt.sign({ userId: user._id }, getJwtSecret(), { expiresIn: '30d' });
   res.json({
     token,
     user: { id: user._id, name: user.name, email: user.email }
   });
-});
+}));

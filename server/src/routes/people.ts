@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, AuthedRequest } from '../middleware/auth.js';
 import { TransactionModel } from '../models/Transaction.js';
 import { UserModel } from '../models/User.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const peopleRouter = Router();
 
@@ -23,12 +24,12 @@ function exactPersonRegex(name: string) {
   return new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 }
 
-peopleRouter.get('/', async (req: AuthedRequest, res) => {
+peopleRouter.get('/', asyncHandler(async (req: AuthedRequest, res) => {
   const user = await UserModel.findById(req.userId);
   res.json({ people: cleanPeople(user?.people ?? []) });
-});
+}));
 
-peopleRouter.post('/', async (req: AuthedRequest, res) => {
+peopleRouter.post('/', asyncHandler(async (req: AuthedRequest, res) => {
   const { name } = req.body as { name?: string };
   const normalized = name?.trim();
   if (!normalized) {
@@ -45,9 +46,9 @@ peopleRouter.post('/', async (req: AuthedRequest, res) => {
   user.people = cleanPeople([...(user.people ?? []), normalized]);
   await user.save();
   res.status(201).json({ people: user.people });
-});
+}));
 
-peopleRouter.delete('/:name', async (req: AuthedRequest, res) => {
+peopleRouter.delete('/:name', asyncHandler(async (req: AuthedRequest, res) => {
   const name = decodeURIComponent(req.params.name).trim().toLowerCase();
   const user = await UserModel.findById(req.userId);
   if (!user) {
@@ -81,4 +82,4 @@ peopleRouter.delete('/:name', async (req: AuthedRequest, res) => {
       };
     })
   });
-});
+}));
