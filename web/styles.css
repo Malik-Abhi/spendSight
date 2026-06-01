@@ -45,6 +45,7 @@ input:focus {
 
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   display: grid;
   place-items: center;
@@ -169,14 +170,15 @@ h1 {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
 }
 
 .spendsight-logo {
-  width: min(390px, 100%);
+  width: min(340px, 100%);
   height: auto;
   object-fit: contain;
   object-position: center;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .floating-icon,
@@ -483,21 +485,19 @@ h1 {
 }
 
 .auth-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
-  gap: 42px;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 460px);
+  gap: clamp(28px, 5vw, 64px);
   align-items: center;
 }
 
 .auth-hero {
-  max-width: 720px;
-}
-
-.auth-hero h1 {
-  margin-top: 18px;
+  max-width: 560px;
 }
 
 .auth-card {
   padding: 24px;
+  width: 100%;
+  max-width: 460px;
 }
 
 .auth-card h2 {
@@ -817,7 +817,9 @@ h1 {
 
 @media (max-width: 820px) {
   .app-shell {
-    padding: 0;
+    display: flex;
+    min-height: 100dvh;
+    padding: 24px 18px;
   }
 
   .phone-frame {
@@ -838,12 +840,63 @@ h1 {
   }
 
   .auth-layout {
-    display: block;
-    padding: 22px;
+    justify-content: flex-start;
+    gap: 18px;
+  }
+
+  .auth-hero {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .spendsight-logo {
+    width: min(300px, 76vw);
+    margin-bottom: 12px;
+  }
+
+  .auth-hero .kicker {
+    margin-bottom: 0;
+    font-size: 12px;
+  }
+
+  .auth-hero p:last-child {
+    max-width: 440px;
+    margin-top: 10px;
+    font-size: 16px;
+    line-height: 1.45;
   }
 
   .auth-card {
-    margin-top: 24px;
+    width: min(100%, 520px);
+    margin: 6px auto 0;
+    padding: 22px;
+    border-radius: 16px;
+  }
+
+  .auth-card h2 {
+    font-size: 34px;
+    line-height: 1.05;
+  }
+
+  .auth-card p {
+    margin-top: 10px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .segmented {
+    min-height: 50px;
+    margin-top: 10px;
+  }
+
+  .auth-card input {
+    height: 50px;
+    margin-top: 10px;
+  }
+
+  .primary-action {
+    min-height: 52px;
+    margin-top: 12px;
   }
 
   .page-header {
