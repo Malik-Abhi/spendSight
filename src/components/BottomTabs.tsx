@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { getPalette } from '../theme/palette';
+import { BrandMark } from './BrandMark';
 
 export type TabKey = 'dashboard' | 'transactions' | 'statement' | 'settings';
 
@@ -36,7 +37,11 @@ export function BottomTabs({ activeTab, onChange }: BottomTabsProps) {
             onPress={() => onChange(tab.key)}
             style={[styles.item, active && { backgroundColor: palette.primary }]}
           >
-            <Ionicons name={tab.icon} size={22} color={active ? palette.primaryText : palette.muted} />
+            {tab.key === 'dashboard' ? (
+              <BrandMark size={active ? 30 : 26} />
+            ) : (
+              <Ionicons name={tab.icon} size={22} color={active ? palette.primaryText : palette.muted} />
+            )}
           </Pressable>
         );
       })}

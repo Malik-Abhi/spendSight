@@ -7,7 +7,6 @@ import {
   CircleDollarSign,
   Edit3,
   FileText,
-  Grid2X2,
   LogOut,
   Moon,
   Plus,
@@ -17,20 +16,29 @@ import {
   Trash2,
   UploadCloud,
   Users,
-  Wallet,
   X
 } from 'lucide-react';
 import { AuthSession, ParsedStatementTransaction, Transaction, User } from '../src/types/expense';
 import { categoryColors } from '../src/theme/palette';
+import spendsightLogoUrl from '../assets/spendsight-logo.png';
+import spendsightMarkUrl from '../assets/spendsight-mark.png';
 import './styles.css';
 
 type TabKey = 'dashboard' | 'transactions' | 'statement' | 'settings';
 type SummaryKind = 'expense' | 'income';
 type ReviewTransaction = ParsedStatementTransaction & { reviewId: string };
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api');
 const SESSION_KEY = 'spendsight-web-session';
 const baseCategories = ['Food', 'Travel', 'Bills', 'Shopping', 'Health', 'Entertainment', 'Education', 'Savings', 'Lending', 'Other'];
+
+function SpendSightMark({ size = 74 }: { size?: number }) {
+  return <img src={spendsightMarkUrl} alt="SpendSight logo" className="spendsight-mark" style={{ width: size, height: size }} />;
+}
+
+function SpendSightLogo() {
+  return <img src={spendsightLogoUrl} alt="SpendSight" className="spendsight-logo" />;
+}
 
 async function apiFetch(path: string, init?: RequestInit) {
   const response = await fetch(`${API_URL}${path}`, init);
@@ -333,13 +341,13 @@ function App() {
         )}
         <nav className="bottom-nav">
           {[
-            ['dashboard', Grid2X2],
+            ['dashboard', SpendSightMark],
             ['transactions', ReceiptText],
             ['statement', Sparkles],
             ['settings', Settings]
           ].map(([key, Icon]) => (
             <button key={key as string} className={tab === key ? 'active' : ''} onClick={() => setTab(key as TabKey)} aria-label={key as string}>
-              {React.createElement(Icon as typeof Grid2X2, { size: 23 })}
+              {React.createElement(Icon as React.ComponentType<{ size?: number }>, { size: 23 })}
             </button>
           ))}
         </nav>
@@ -372,11 +380,8 @@ function AuthScreen({ onSession }: { onSession: (session: AuthSession) => Promis
   return (
     <main className="app-shell auth-layout">
       <section className="auth-hero">
-        <div className="brand-mark">
-          <BarChart3 />
-        </div>
+        <SpendSightLogo />
         <p className="kicker">Personal finance clarity</p>
-        <h1>SpendSight</h1>
         <p>Track expenses, scan statements, manage trades, and understand your money with a richer desktop experience.</p>
       </section>
       <section className="auth-card glass-card">
@@ -433,7 +438,7 @@ function Dashboard({
           <h1>Hi {user.name.split(' ')[0]}</h1>
           <p>Your spending summary updates as you add expenses.</p>
         </div>
-        <div className="floating-icon"><Wallet /></div>
+        <div className="floating-icon logo-icon"><SpendSightMark size={66} /></div>
       </header>
       <div className="chip-row">{monthOptions.map((month) => <button key={month} className={month === selectedMonth ? 'chip active' : 'chip'} onClick={() => setSelectedMonth(month)}>{monthLabel(month)}</button>)}</div>
       <section className="summary-card glass-card">
@@ -680,7 +685,7 @@ function SettingsScreen({
   return (
     <div className="screen fade-in">
       <PageIntro kicker="Account" title="Settings" copy="Manage your profile, records, people, and trade balances." />
-      <section className="profile-card glass-card"><div className="floating-icon"><Users /></div><div><strong>{user.name}</strong><span>{user.email}</span></div></section>
+      <section className="profile-card glass-card"><div className="floating-icon logo-icon"><SpendSightMark size={60} /></div><div><strong>{user.name}</strong><span>{user.email}</span></div></section>
       <button className="settings-row" onClick={() => setPeopleOpen(true)}><Users /> People & trades <span>{summaries.length} people</span><ChevronRight /></button>
       <button className="settings-row" onClick={() => setRecordsOpen(true)}><Trash2 /> Manage records <span>{transactions.length} saved</span><ChevronRight /></button>
       <button className="settings-row danger" onClick={onLogout}><LogOut /> Logout</button>

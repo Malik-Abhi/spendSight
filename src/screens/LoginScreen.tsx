@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { getPalette } from '../theme/palette';
 import { fetchPeople, fetchTransactions, loginWithEmail, loginWithGoogle, signupWithEmail } from '../services/api';
+import { BrandLogo } from '../components/BrandLogo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -116,11 +116,10 @@ export function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <LinearGradient colors={['#18B7A5', '#F6B44B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.mark}>
-            <Ionicons name="analytics" size={42} color="#F8FAFC" />
-          </LinearGradient>
+          <View style={styles.logo}>
+            <BrandLogo width={292} height={112} />
+          </View>
           <Text style={[styles.kicker, { color: palette.primary }]}>Personal finance clarity</Text>
-          <Text style={[styles.title, { color: palette.text }]}>SpendSight</Text>
           <Text style={[styles.subtitle, { color: palette.muted }]}>
             Track expenses, scan statements, and see where your money moves every month.
           </Text>
@@ -210,31 +209,26 @@ const styles = StyleSheet.create({
     paddingBottom: 36
   },
   hero: {
+    alignItems: 'center',
     marginBottom: 24
   },
-  mark: {
-    width: 82,
-    height: 82,
-    borderRadius: 8,
+  logo: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18
+    marginBottom: 14
   },
   kicker: {
     fontSize: 12,
     fontWeight: '900',
+    textAlign: 'center',
     textTransform: 'uppercase'
-  },
-  title: {
-    fontSize: 42,
-    lineHeight: 48,
-    fontWeight: '900',
-    marginTop: 6
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
-    marginTop: 8
+    marginTop: 8,
+    textAlign: 'center'
   },
   form: {
     borderWidth: 1,
