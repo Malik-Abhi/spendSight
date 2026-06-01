@@ -516,7 +516,7 @@ function TransactionsScreen({ token, transactions, categories, onCreate }: { tok
       <section className="form-card glass-card">
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Transaction title" />
         <input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount" type="number" />
-        <input value={person} onChange={(event) => setPerson(event.target.value)} placeholder="Person optional, e.g. Nitika" />
+        <input value={person} onChange={(event) => setPerson(event.target.value)} placeholder="Person optional" />
         <div className="segmented"><button className={kind === 'expense' ? 'active' : ''} onClick={() => setKind('expense')}>Expense</button><button className={kind === 'income' ? 'active' : ''} onClick={() => setKind('income')}>Income</button></div>
         {!person.trim() ? <ChipPicker values={categories} value={category} onChange={setCategory} /> : <div className="info-line"><Users size={16} /> Person selected. Saved in trade book.</div>}
         <button className="primary-action" onClick={submit}><Plus size={18} /> Add record</button>
