@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import {
   BarChart3,
@@ -27,7 +28,7 @@ type TabKey = 'dashboard' | 'transactions' | 'statement' | 'settings';
 type SummaryKind = 'expense' | 'income';
 type ReviewTransaction = ParsedStatementTransaction & { reviewId: string };
 
-const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api');
+const API_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '');
 const SESSION_KEY = 'spendsight-web-session';
 const baseCategories = ['Food', 'Travel', 'Bills', 'Shopping', 'Health', 'Entertainment', 'Education', 'Savings', 'Lending', 'Other'];
 
@@ -40,7 +41,13 @@ function SpendSightLogo() {
 }
 
 async function apiFetch(path: string, init?: RequestInit) {
-  const response = await fetch(`${API_URL}${path}`, init);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, init);
+  } catch {
+    throw new Error('Could not reach the API. Check your dev proxy or Vercel deployment.');
+  }
+
   if (!response.ok) {
     let message = 'Request failed';
     try {
@@ -746,13 +753,27 @@ function EditModal({ token, transaction, categories, onClose, onSave }: { token:
 }
 
 function Modal({ title, subtitle, children, onClose }: { title: string; subtitle?: string; children: React.ReactNode; onClose: () => void }) {
-  return (
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.scrollTo({ top: 0 });
+    contentRef.current?.scrollTo({ top: 0 });
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return createPortal(
     <div className="modal-backdrop">
       <section className="modal-panel">
         <header><div><p className="kicker">{subtitle}</p><h2>{title}</h2></div><button onClick={onClose}><X /></button></header>
-        {children}
+        <div className="modal-content" ref={contentRef}>{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
 
