@@ -478,31 +478,48 @@ h1 {
   left: 32px;
   right: 32px;
   bottom: 24px;
-  height: 76px;
+  height: 78px;
   border: 1px solid #263845;
-  border-radius: 18px;
-  background: rgba(21, 31, 40, 0.94);
+  border-radius: 22px;
+  background: rgba(21, 31, 40, 0.96);
   backdrop-filter: blur(18px);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
 }
 
 .bottom-nav button {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   border: 0;
-  border-radius: 14px;
+  border-radius: 18px;
   background: transparent;
   color: #a7b4be;
   display: grid;
   place-items: center;
-  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+  outline: 0;
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.bottom-nav button:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(24, 183, 165, 0.6);
+}
+
+.bottom-nav svg,
+.bottom-nav .spendsight-mark {
+  width: 25px !important;
+  height: 25px !important;
 }
 
 .bottom-nav button.active {
   background: #18b7a5;
   color: #042f2e;
-  transform: translateY(-8px);
+  box-shadow: inset 0 -2px 0 rgba(4, 47, 46, 0.16), 0 10px 24px rgba(24, 183, 165, 0.18);
 }
 
 .app-shell.auth-layout {
@@ -891,15 +908,22 @@ h1 {
     min-width: 0;
     height: 100dvh;
     max-height: 100dvh;
-    padding: 34px 20px calc(112px + env(safe-area-inset-bottom));
+    padding: 34px 20px calc(124px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav {
     left: 20px;
     right: 20px;
     bottom: max(14px, env(safe-area-inset-bottom));
-    height: 76px;
+    height: 74px;
     z-index: 12;
+    border-radius: 20px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .bottom-nav button {
+    border-radius: 17px;
   }
 
   .app-shell.auth-layout {
@@ -908,8 +932,10 @@ h1 {
     align-items: center;
     justify-content: flex-start;
     width: 100%;
+    min-height: 100dvh;
     overflow-x: hidden;
-    gap: 20px;
+    gap: 18px;
+    padding: 24px 20px 40px;
   }
 
   .auth-layout {
@@ -918,14 +944,15 @@ h1 {
   }
 
   .auth-hero {
-    width: min(100%, 380px);
-    max-width: 380px;
+    width: 100%;
+    max-width: 360px;
     margin: 0 auto;
   }
 
   .spendsight-logo {
-    width: min(280px, 72vw);
-    margin-bottom: 12px;
+    width: min(300px, 78vw);
+    max-height: 170px;
+    margin-bottom: 14px;
   }
 
   .auth-hero .kicker {
@@ -934,16 +961,16 @@ h1 {
   }
 
   .auth-hero p:last-child {
-    max-width: 340px;
+    max-width: 330px;
     margin-top: 10px;
     font-size: 15px;
     line-height: 1.45;
   }
 
   .auth-card {
-    width: min(100%, 380px);
-    max-width: 380px;
-    margin: 6px auto 0;
+    width: 100%;
+    max-width: 360px;
+    margin: 4px auto 0;
     padding: 20px;
     border-radius: 16px;
   }
@@ -961,17 +988,23 @@ h1 {
 
   .segmented {
     min-height: 50px;
-    margin-top: 10px;
+    margin-top: 14px;
+    padding: 6px;
+  }
+
+  .segmented button {
+    border-radius: 11px;
   }
 
   .auth-card input {
     height: 50px;
-    margin-top: 10px;
+    margin-top: 12px;
+    padding-inline: 16px;
   }
 
   .primary-action {
     min-height: 52px;
-    margin-top: 12px;
+    margin-top: 14px;
   }
 
   .page-header {
@@ -1227,6 +1260,10 @@ h1 {
     padding-inline: 18px;
   }
 
+  .app-shell.auth-layout {
+    padding-inline: 18px;
+  }
+
   .bottom-nav {
     left: 18px;
     right: 18px;
@@ -1270,6 +1307,10 @@ h1 {
 
 @media (max-width: 360px) {
   .screen {
+    padding-inline: 14px;
+  }
+
+  .app-shell.auth-layout {
     padding-inline: 14px;
   }
 
