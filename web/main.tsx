@@ -8,7 +8,6 @@ import {
   Edit3,
   FileText,
   LogOut,
-  Moon,
   Plus,
   ReceiptText,
   Settings,

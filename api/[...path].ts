@@ -1,5 +1,6 @@
 import authHandler from '../serverless/authApi';
 import { peopleHandler, transactionsHandler } from '../serverless/dataApi';
+import { statementsHandler } from '../serverless/statementApi';
 
 export default async function handler(req: any, res: any) {
   const path = Array.isArray(req.query?.path) ? req.query.path : String(req.query?.path || '').split('/').filter(Boolean);
@@ -17,6 +18,10 @@ export default async function handler(req: any, res: any) {
 
   if (resource === 'people') {
     return peopleHandler(req, res);
+  }
+
+  if (resource === 'statements') {
+    return statementsHandler(req, res);
   }
 
   res.statusCode = 404;

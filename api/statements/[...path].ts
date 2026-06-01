@@ -1,9 +1,11 @@
-import app from '../../server/dist/app.js';
+import { statementsHandler } from '../../serverless/statementApi';
+
+export const config = {
+  api: {
+    bodyParser: false
+  }
+};
 
 export default async function handler(req: any, res: any) {
-  if (req.url && !req.url.startsWith('/api')) {
-    req.url = `/api/statements${req.url.startsWith('/') ? '' : '/'}${req.url}`;
-  }
-
-  return app(req, res);
+  return statementsHandler(req, res);
 }
