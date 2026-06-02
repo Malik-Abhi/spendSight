@@ -3,6 +3,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth.js';
 import { TransactionModel } from '../models/Transaction.js';
 import { UserModel } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { decryptTransactionFields, encryptTransactionFields } from '../utils/transactionEncryption.js';
 
 export const peopleRouter = Router();
 
@@ -18,10 +19,6 @@ function cleanPeople(people: unknown[]) {
       if (!merged.has(key)) merged.set(key, person);
     });
   return Array.from(merged.values()).sort((a, b) => a.localeCompare(b));
-}
-
-function exactPersonRegex(name: string) {
-  return new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 }
 
 peopleRouter.get('/', asyncHandler(async (req: AuthedRequest, res) => {
@@ -59,27 +56,36 @@ peopleRouter.delete('/:name', asyncHandler(async (req: AuthedRequest, res) => {
   user.people = cleanPeople((user.people ?? []).filter((person) => person.trim().toLowerCase() !== name));
   await user.save();
 
-  await TransactionModel.updateMany(
-    { userId: req.userId, person: exactPersonRegex(name) },
-    { $unset: { person: '' }, $set: { category: 'Other' } }
-  );
-  const transactions = await TransactionModel.find({ userId: req.userId }).sort({ date: -1, createdAt: -1 });
+  const rows = await TransactionModel.find({ userId: req.userId });
+  await Promise.all(rows.map(async (transaction) => {
+    const object = transaction.toObject();
+    const decrypted = decryptTransactionFields(object);
+    if (String(decrypted.person || '').trim().toLowerCase() !== name) return;
+
+    await TransactionModel.updateOne(
+      { _id: object._id, userId: req.userId },
+      { $unset: { person: '' }, $set: encryptTransactionFields({ category: 'Other' }) }
+    );
+  }));
+
+  const transactions = await TransactionModel.find({ userId: req.userId }).sort({ createdAt: -1 });
 
   res.json({
     people: user.people,
     transactions: transactions.map((transaction) => {
       const object = transaction.toObject();
+      const decrypted = decryptTransactionFields(object);
       return {
-        id: String(object._id),
-        title: object.title,
-        amount: object.amount,
-        category: object.category,
-        date: object.date,
-        note: object.note,
-        person: object.person,
-        kind: object.kind ?? 'expense',
-        source: object.source
+        id: String(decrypted._id),
+        title: String(decrypted.title ?? ''),
+        amount: Number(decrypted.amount ?? 0),
+        category: String(decrypted.category ?? 'Other'),
+        date: String(decrypted.date ?? ''),
+        note: decrypted.note ? String(decrypted.note) : undefined,
+        person: decrypted.person ? String(decrypted.person) : undefined,
+        kind: decrypted.kind === 'income' ? 'income' : 'expense',
+        source: decrypted.source === 'statement' ? 'statement' : 'manual'
       };
-    })
+    }).sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
   });
 }));

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { decryptTransactionFields, encryptTransactionFields, needsTransactionEncryption } from './transactionEncryption';
 
 let connectionPromise: Promise<typeof mongoose> | null = null;
 
@@ -19,16 +20,40 @@ const transactionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
-    amount: { type: Number, required: true },
+    amount: { type: mongoose.Schema.Types.Mixed, required: true },
     category: { type: String, required: true },
     date: { type: String, required: true },
-    kind: { type: String, enum: ['expense', 'income'], default: 'expense' },
-    source: { type: String, enum: ['manual', 'statement'], default: 'manual' },
+    kind: { type: String, default: 'expense' },
+    source: { type: String, default: 'manual' },
     person: String,
     note: String
   },
   { timestamps: true }
 );
+
+transactionSchema.pre('validate', function encryptBeforeValidate(next) {
+  const object = this.toObject();
+  if (needsTransactionEncryption(object)) {
+    this.set(encryptTransactionFields(object));
+  }
+  next();
+});
+
+transactionSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function encryptBeforeUpdate(next) {
+  const update = this.getUpdate() as Record<string, any> | null;
+  if (!update) {
+    next();
+    return;
+  }
+
+  if (update.$set) {
+    update.$set = encryptTransactionFields(update.$set);
+  } else {
+    this.setUpdate(encryptTransactionFields(update));
+  }
+
+  next();
+});
 
 const UserModel: any = mongoose.models.User || mongoose.model('User', userSchema);
 const TransactionModel: any = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
@@ -81,16 +106,17 @@ async function getUserId(req: any) {
 
 function serializeTransaction(transaction: any) {
   const object = transaction.toObject ? transaction.toObject() : transaction;
+  const decrypted = decryptTransactionFields(object);
   return {
-    id: String(object._id),
-    title: object.title,
-    amount: object.amount,
-    category: object.category,
-    date: object.date,
-    note: object.note,
-    person: object.person,
-    kind: object.kind ?? 'expense',
-    source: object.source
+    id: String(decrypted._id),
+    title: String(decrypted.title ?? ''),
+    amount: Number(decrypted.amount ?? 0),
+    category: String(decrypted.category ?? 'Other'),
+    date: String(decrypted.date ?? ''),
+    note: decrypted.note ? String(decrypted.note) : undefined,
+    person: decrypted.person ? String(decrypted.person) : undefined,
+    kind: decrypted.kind === 'income' ? 'income' : 'expense',
+    source: decrypted.source === 'statement' ? 'statement' : 'manual'
   };
 }
 
@@ -106,13 +132,31 @@ function cleanPeople(people: unknown[]) {
   return Array.from(merged.values()).sort((a, b) => a.localeCompare(b));
 }
 
-function exactPersonRegex(name: string) {
-  return new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-}
-
 async function allUserTransactions(userId: string) {
-  const transactions = await TransactionModel.find({ userId }).sort({ date: -1, createdAt: -1 });
-  return transactions.map(serializeTransaction);
+  const transactions = await TransactionModel.find({ userId }).sort({ createdAt: -1 });
+  await Promise.all(transactions.map(async (transaction: any) => {
+    const object = transaction.toObject();
+    if (!needsTransactionEncryption(object)) return;
+
+    const decrypted = decryptTransactionFields(object);
+    await TransactionModel.updateOne(
+      { _id: object._id, userId },
+      { $set: encryptTransactionFields({
+        title: decrypted.title,
+        amount: decrypted.amount,
+        category: decrypted.category,
+        date: decrypted.date,
+        kind: decrypted.kind,
+        source: decrypted.source,
+        person: decrypted.person,
+        note: decrypted.note
+      }) }
+    );
+  }));
+
+  return transactions
+    .map(serializeTransaction)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 }
 
 export async function transactionsHandler(req: any, res: any) {
@@ -135,13 +179,13 @@ export async function transactionsHandler(req: any, res: any) {
     if (!route && req.method === 'POST') {
       const body = await readJsonBody(req);
       const person = typeof body.person === 'string' ? body.person.trim() : '';
-      const transaction = await TransactionModel.create({
+      const transaction = await TransactionModel.create(encryptTransactionFields({
         ...body,
         person: person || undefined,
         category: person ? 'Trade' : body.category,
         userId,
         source: 'manual'
-      });
+      }));
       sendJson(res, 201, { transaction: serializeTransaction(transaction) });
       return;
     }
@@ -156,7 +200,7 @@ export async function transactionsHandler(req: any, res: any) {
       const created = await TransactionModel.insertMany(
         transactions
           .filter((transaction) => transaction.title && Number(transaction.amount) > 0 && transaction.category && transaction.date)
-          .map((transaction) => ({
+          .map((transaction) => encryptTransactionFields({
             title: transaction.title,
             amount: transaction.amount,
             category: transaction.person?.trim() ? 'Trade' : transaction.category,
@@ -180,16 +224,25 @@ export async function transactionsHandler(req: any, res: any) {
         return;
       }
 
+      const encryptedUpdate = encryptTransactionFields({
+        title: title.trim(),
+        amount: Number(amount),
+        category: person?.trim() ? 'Trade' : category.trim(),
+        date: date.trim(),
+        kind: kind === 'income' ? 'income' : 'expense',
+        ...(note?.trim() ? { note: note.trim() } : {}),
+        ...(person?.trim() ? { person: person.trim() } : {})
+      });
+      const unsetUpdate = {
+        ...(note?.trim() ? {} : { note: '' }),
+        ...(person?.trim() ? {} : { person: '' })
+      };
+
       const transaction = await TransactionModel.findOneAndUpdate(
         { _id: route, userId },
         {
-          title: title.trim(),
-          amount: Number(amount),
-          category: person?.trim() ? 'Trade' : category.trim(),
-          date: date.trim(),
-          note: note?.trim(),
-          person: person?.trim(),
-          kind: kind === 'income' ? 'income' : 'expense'
+          $set: encryptedUpdate,
+          ...(Object.keys(unsetUpdate).length ? { $unset: unsetUpdate } : {})
         },
         { new: true }
       );
@@ -263,10 +316,17 @@ export async function peopleHandler(req: any, res: any) {
 
       user.people = cleanPeople((user.people ?? []).filter((person: string) => person.trim().toLowerCase() !== name));
       await user.save();
-      await TransactionModel.updateMany(
-        { userId, person: exactPersonRegex(name) },
-        { $unset: { person: '' }, $set: { category: 'Other' } }
-      );
+      const rows = await TransactionModel.find({ userId });
+      await Promise.all(rows.map(async (transaction: any) => {
+        const object = transaction.toObject();
+        const decrypted = decryptTransactionFields(object);
+        if (String(decrypted.person || '').trim().toLowerCase() !== name) return;
+
+        await TransactionModel.updateOne(
+          { _id: object._id, userId },
+          { $unset: { person: '' }, $set: encryptTransactionFields({ category: 'Other' }) }
+        );
+      }));
 
       sendJson(res, 200, {
         people: user.people,

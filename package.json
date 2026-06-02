@@ -16,7 +16,12 @@
     "web:build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
-    "server": "npm --prefix server run dev"
+    "server": "npm --prefix server run dev",
+    "encrypt:transactions": "node scripts/encryptTransactions.mjs",
+    "encrypt:transactions:all": "node scripts/encryptTransactions.mjs --all-dbs",
+    "check:transactions-encryption": "node scripts/encryptTransactions.mjs --check",
+    "check:transactions-encryption:all": "node scripts/encryptTransactions.mjs --check --all-dbs",
+    "check:transactions-encryption:verbose": "node scripts/encryptTransactions.mjs --check --all-dbs --verbose"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
