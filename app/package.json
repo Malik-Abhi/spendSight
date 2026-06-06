@@ -1,0 +1,5 @@
+{
+  "name": "spendsight-app",
+  "private": true,
+  "main": "../node_modules/expo/AppEntry.js"
+}

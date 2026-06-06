@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { applyCors, handleCors } from './cors';
 
 let connectionPromise: Promise<typeof mongoose> | null = null;
 
@@ -32,6 +33,7 @@ async function connectDatabase() {
 
 function sendJson(res: any, status: number, payload: unknown) {
   res.statusCode = status;
+  applyCors({}, res);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
 }
@@ -121,6 +123,8 @@ async function handleLogin(req: any, res: any) {
 
 export default async function authHandler(req: any, res: any) {
   try {
+    if (handleCors(req, res)) return;
+
     if (req.method !== 'POST') {
       sendJson(res, 405, { message: 'Method not allowed' });
       return;

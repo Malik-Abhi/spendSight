@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { applyCors, handleCors } from './cors';
 import { decryptTransactionFields, encryptTransactionFields, needsTransactionEncryption } from './transactionEncryption';
 
 let connectionPromise: Promise<typeof mongoose> | null = null;
@@ -72,6 +73,7 @@ async function connectDatabase() {
 
 function sendJson(res: any, status: number, payload: unknown) {
   res.statusCode = status;
+  applyCors({}, res);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
 }
@@ -132,6 +134,17 @@ function cleanPeople(people: unknown[]) {
   return Array.from(merged.values()).sort((a, b) => a.localeCompare(b));
 }
 
+function transactionFingerprint(transaction: { title?: string; amount?: number; date?: string; kind?: string; person?: string; category?: string }) {
+  return [
+    String(transaction.title || '').trim().toLowerCase().replace(/\s+/g, ' '),
+    Number(transaction.amount || 0).toFixed(2),
+    String(transaction.date || '').trim(),
+    transaction.kind === 'income' ? 'income' : 'expense',
+    String(transaction.person || '').trim().toLowerCase(),
+    String(transaction.category || '').trim().toLowerCase()
+  ].join('|');
+}
+
 async function allUserTransactions(userId: string) {
   const transactions = await TransactionModel.find({ userId }).sort({ createdAt: -1 });
   await Promise.all(transactions.map(async (transaction: any) => {
@@ -161,6 +174,8 @@ async function allUserTransactions(userId: string) {
 
 export async function transactionsHandler(req: any, res: any) {
   try {
+    if (handleCors(req, res)) return;
+
     await connectDatabase();
     const userId = await getUserId(req);
     const route = routeFromRequest(req, 'transactions');
@@ -197,12 +212,15 @@ export async function transactionsHandler(req: any, res: any) {
         return;
       }
 
-      const created = await TransactionModel.insertMany(
-        transactions
-          .filter((transaction) => transaction.title && Number(transaction.amount) > 0 && transaction.category && transaction.date)
-          .map((transaction) => encryptTransactionFields({
+      const existingTransactions = (await TransactionModel.find({ userId })).map(serializeTransaction);
+      const existing = new Set(existingTransactions.map(transactionFingerprint));
+      const incoming = new Set<string>();
+      let skipped = 0;
+      const rows = transactions
+        .filter((transaction) => transaction.title && Number(transaction.amount) > 0 && transaction.category && transaction.date)
+        .map((transaction) => ({
             title: transaction.title,
-            amount: transaction.amount,
+            amount: Number(transaction.amount),
             category: transaction.person?.trim() ? 'Trade' : transaction.category,
             date: transaction.date,
             note: transaction.note,
@@ -210,9 +228,20 @@ export async function transactionsHandler(req: any, res: any) {
             kind: transaction.kind === 'income' ? 'income' : 'expense',
             source: 'statement',
             userId
-          }))
-      );
-      sendJson(res, 201, { transactions: created.map(serializeTransaction) });
+        }))
+        .filter((transaction) => {
+          const key = transactionFingerprint(transaction);
+          if (existing.has(key) || incoming.has(key)) {
+            skipped += 1;
+            return false;
+          }
+
+          incoming.add(key);
+          return true;
+        });
+
+      const created = rows.length ? await TransactionModel.insertMany(rows.map((transaction) => encryptTransactionFields(transaction))) : [];
+      sendJson(res, 201, { transactions: created.map(serializeTransaction), skipped });
       return;
     }
 
@@ -276,6 +305,8 @@ export async function transactionsHandler(req: any, res: any) {
 
 export async function peopleHandler(req: any, res: any) {
   try {
+    if (handleCors(req, res)) return;
+
     await connectDatabase();
     const userId = await getUserId(req);
     const route = routeFromRequest(req, 'people');

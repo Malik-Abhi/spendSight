@@ -51,6 +51,7 @@ input:focus {
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
+  isolation: isolate;
   display: grid;
   place-items: center;
   padding: 32px;
@@ -58,6 +59,35 @@ input:focus {
     radial-gradient(circle at 12% 12%, rgba(24, 183, 165, 0.18), transparent 28%),
     radial-gradient(circle at 88% 8%, rgba(246, 180, 75, 0.12), transparent 26%),
     linear-gradient(140deg, #071014 0%, #0d161d 52%, #101820 100%);
+  overflow: hidden;
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.app-shell::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
+  animation: backgroundDrift 28s linear infinite;
+}
+
+.app-shell::after {
+  z-index: -1;
+  background:
+    linear-gradient(118deg, transparent 15%, rgba(24, 183, 165, 0.08) 38%, transparent 62%),
+    linear-gradient(32deg, transparent 18%, rgba(246, 180, 75, 0.045) 50%, transparent 76%);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  animation: backgroundSweep 18s ease-in-out infinite alternate;
 }
 
 .boot .loader {
@@ -99,9 +129,11 @@ input:focus {
   min-height: calc(100vh - 64px);
   border: 1px solid rgba(157, 178, 191, 0.18);
   border-radius: 32px;
-  background: rgba(12, 21, 28, 0.88);
+  background:
+    linear-gradient(160deg, rgba(16, 31, 36, 0.9), rgba(10, 18, 25, 0.92)),
+    rgba(12, 21, 28, 0.88);
   backdrop-filter: blur(28px);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.035);
   display: grid;
   grid-template-columns: 1fr;
   overflow: hidden;
@@ -299,7 +331,8 @@ h1 {
 .record-row span,
 .detail-card span,
 .person-card span,
-.profile-card span {
+.profile-card span,
+.comparison-card span {
   color: #a7b4be;
   font-weight: 750;
 }
@@ -324,24 +357,39 @@ h1 {
 }
 
 .donut-wrap {
-  width: 260px;
-  height: 260px;
-  margin: 20px auto;
+  width: clamp(340px, 26vw, 430px);
+  height: clamp(340px, 26vw, 430px);
+  margin: 26px auto 32px;
   position: relative;
   display: grid;
   place-items: center;
+}
+
+.donut-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 999px;
+  background: conic-gradient(from 120deg, rgba(24, 183, 165, 0.16), transparent 34%, rgba(246, 180, 75, 0.12), transparent 72%);
+  filter: blur(18px);
+  opacity: 0.58;
+  animation: ringGlow 10s linear infinite;
 }
 
 .donut {
   width: 100%;
   height: 100%;
   transform: rotate(-90deg);
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.16));
 }
 
 .donut-track,
 .donut-segment {
   fill: none;
-  stroke-width: 10;
+  stroke-width: 8.8;
 }
 
 .donut-track {
@@ -350,25 +398,103 @@ h1 {
 
 .donut-segment {
   stroke-linecap: butt;
-  animation: draw 850ms ease both;
+  animation: draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  cursor: pointer;
+  outline: none;
+  transition: filter 180ms ease, opacity 180ms ease, stroke-width 180ms ease, transform 180ms ease;
+}
+
+.donut-segment:hover,
+.donut-segment:focus-visible,
+.donut-segment.is-active {
+  stroke-width: 10.4;
+  filter: brightness(1.18) drop-shadow(0 0 10px currentColor);
+  opacity: 1;
+  transform: scale(1.026);
 }
 
 .donut-center {
   position: absolute;
-  inset: 0;
+  inset: 25%;
+  z-index: 2;
   display: grid;
   place-content: center;
   text-align: center;
+  min-width: 0;
+  pointer-events: none;
 }
 
 .donut-center strong {
-  font-size: clamp(18px, 3vw, 28px);
+  display: block;
+  max-width: 100%;
+  color: #f7fafc;
+  font-size: clamp(25px, 2.55vw, 38px);
+  line-height: 1.02;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .donut-center span {
   color: #a7b4be;
   font-weight: 800;
-  margin-top: 4px;
+  margin-top: 7px;
+  font-size: clamp(14px, 1.1vw, 18px);
+}
+
+.donut-tooltip {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%) translateY(0) scale(1);
+  min-width: 218px;
+  max-width: 92%;
+  min-height: 48px;
+  border: 1px solid #263845;
+  border-radius: 14px;
+  background: rgba(21, 31, 40, 0.94);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  pointer-events: none;
+  animation: tooltipPop 180ms ease both;
+}
+
+.donut-tooltip i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.donut-tooltip span {
+  min-width: 0;
+  color: #f7fafc;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-tooltip strong {
+  color: #18b7a5;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.donut-tooltip small {
+  height: 24px;
+  min-width: 38px;
+  border-radius: 999px;
+  background: rgba(24, 183, 165, 0.14);
+  color: #18b7a5;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 950;
 }
 
 .stat-grid {
@@ -827,6 +953,82 @@ h1 {
   margin-top: 3px;
 }
 
+.comparison-list {
+  display: grid;
+  gap: 12px;
+}
+
+.comparison-card {
+  border: 1px solid #263845;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(21, 31, 40, 0.96), rgba(14, 24, 32, 0.96));
+  padding: 14px;
+}
+
+.comparison-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.comparison-card strong {
+  display: block;
+  font-size: 18px;
+}
+
+.comparison-card em {
+  font-style: normal;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.comparison-card em.positive {
+  color: #22c55e;
+}
+
+.comparison-card em.negative {
+  color: #ef476f;
+}
+
+.comparison-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.comparison-bars > div {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.8fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.comparison-bars b {
+  color: #f7fafc;
+  font-size: 14px;
+  justify-self: end;
+}
+
+.comparison-bars i {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 999px;
+  background: #1d2b35;
+  overflow: hidden;
+}
+
+.comparison-bars em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #18b7a5, #3b82f6);
+}
+
+.comparison-bars > div:nth-child(2) em {
+  background: linear-gradient(90deg, #f59e0b, #ef476f);
+}
+
 .category-add {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -870,6 +1072,31 @@ h1 {
 @keyframes draw {
   from {
     stroke-dashoffset: 240;
+  }
+}
+
+@keyframes backgroundDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(44px, 44px, 0); }
+}
+
+@keyframes backgroundSweep {
+  from { transform: translate3d(-4%, -2%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.04); }
+}
+
+@keyframes ringGlow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tooltipPop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
@@ -1040,9 +1267,22 @@ h1 {
   }
 
   .donut-wrap {
-    width: min(220px, 68vw);
-    height: min(220px, 68vw);
-    margin: 18px auto;
+    width: min(340px, 84vw);
+    height: min(340px, 84vw);
+    margin: 18px auto 28px;
+  }
+
+  .donut-center {
+    inset: 24%;
+  }
+
+  .donut-center strong {
+    font-size: clamp(23px, 7vw, 34px);
+  }
+
+  .donut-tooltip {
+    bottom: -2px;
+    min-width: min(232px, 90vw);
   }
 
   .summary-card {

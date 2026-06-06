@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import multer from 'multer';
+import { applyCors, handleCors } from './cors';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const allowedMediaTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
@@ -34,6 +35,7 @@ type StatementContext = {
 
 function sendJson(res: any, status: number, payload: unknown) {
   res.statusCode = status;
+  applyCors({}, res);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
 }
@@ -143,6 +145,8 @@ function routeFromRequest(req: any) {
 
 export async function statementsHandler(req: any, res: any) {
   try {
+    if (handleCors(req, res)) return;
+
     const route = routeFromRequest(req);
     if (req.method !== 'POST' || route !== 'analyze') {
       sendJson(res, req.method === 'POST' ? 404 : 405, { message: req.method === 'POST' ? 'Statement route not found' : 'Method not allowed' });

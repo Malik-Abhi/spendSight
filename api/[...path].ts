@@ -1,12 +1,29 @@
 import authHandler from '../serverless/authApi';
+import { applyCors, handleCors } from '../serverless/cors';
 import { peopleHandler, transactionsHandler } from '../serverless/dataApi';
 import { statementsHandler } from '../serverless/statementApi';
 
+export const config = {
+  api: {
+    bodyParser: false
+  }
+};
+
 export default async function handler(req: any, res: any) {
+  if (handleCors(req, res)) return;
+
   const path = Array.isArray(req.query?.path) ? req.query.path : String(req.query?.path || '').split('/').filter(Boolean);
   const [resource, ...rest] = path;
 
   req.query = { ...req.query, path: rest };
+
+  if (resource === 'health') {
+    applyCors(req, res);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
 
   if (resource === 'auth') {
     return authHandler(req, res);
@@ -25,6 +42,7 @@ export default async function handler(req: any, res: any) {
   }
 
   res.statusCode = 404;
+  applyCors(req, res);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify({ message: 'API route not found' }));
 }

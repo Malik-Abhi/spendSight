@@ -28,6 +28,17 @@ function sortTransactions(transactions: ReturnType<typeof serializeTransaction>[
   return transactions.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 }
 
+function transactionFingerprint(transaction: { title?: string; amount?: number; date?: string; kind?: string; person?: string; category?: string }) {
+  return [
+    String(transaction.title || '').trim().toLowerCase().replace(/\s+/g, ' '),
+    Number(transaction.amount || 0).toFixed(2),
+    String(transaction.date || '').trim(),
+    transaction.kind === 'income' ? 'income' : 'expense',
+    String(transaction.person || '').trim().toLowerCase(),
+    String(transaction.category || '').trim().toLowerCase()
+  ].join('|');
+}
+
 async function upgradeStoredEncryption(transactions: any[], userId: string) {
   await Promise.all(transactions.map(async (transaction) => {
     const object = transaction.toObject ? transaction.toObject() : transaction;
@@ -93,12 +104,15 @@ transactionRouter.post('/import', asyncHandler(async (req: AuthedRequest, res) =
     return;
   }
 
-  const created = await TransactionModel.insertMany(
-    transactions
-      .filter((transaction) => transaction.title && Number(transaction.amount) > 0 && transaction.category && transaction.date)
-      .map((transaction) => encryptTransactionFields({
+  const existingTransactions = (await TransactionModel.find({ userId: req.userId })).map(serializeTransaction);
+  const existing = new Set(existingTransactions.map(transactionFingerprint));
+  const incoming = new Set<string>();
+  let skipped = 0;
+  const rows = transactions
+    .filter((transaction) => transaction.title && Number(transaction.amount) > 0 && transaction.category && transaction.date)
+    .map((transaction) => ({
         title: transaction.title,
-        amount: transaction.amount,
+        amount: Number(transaction.amount),
         category: transaction.person?.trim() ? 'Trade' : transaction.category,
         date: transaction.date,
         note: transaction.note,
@@ -106,10 +120,21 @@ transactionRouter.post('/import', asyncHandler(async (req: AuthedRequest, res) =
         kind: transaction.kind === 'income' ? 'income' : 'expense',
         source: 'statement',
         userId: req.userId
-      }))
-  );
+    }))
+    .filter((transaction) => {
+      const key = transactionFingerprint(transaction);
+      if (existing.has(key) || incoming.has(key)) {
+        skipped += 1;
+        return false;
+      }
 
-  res.status(201).json({ transactions: created.map(serializeTransaction) });
+      incoming.add(key);
+      return true;
+    });
+
+  const created = rows.length ? await TransactionModel.insertMany(rows.map((transaction) => encryptTransactionFields(transaction))) : [];
+
+  res.status(201).json({ transactions: created.map(serializeTransaction), skipped });
 }));
 
 transactionRouter.put('/:id', asyncHandler(async (req: AuthedRequest, res) => {
